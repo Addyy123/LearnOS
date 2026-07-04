@@ -1,0 +1,6 @@
+openai>=1.0
+beautifulsoup4>=4.12
+requests>=2.31
+flask>=3.0
+ddgs>=6.0
+chromadb>=0.4

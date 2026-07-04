@@ -1,0 +1,49 @@
+Level 2: Tool-Enabled Assistant (Immediate Upgrades)
+Bring your placeholder agents to life.
+
+Active File Operations:
+Fully implement 
+
+file_tool.py
+ with functions like create_file(), edit_file(), delete_file(), list_directory(), and search_text_in_files().
+Enable the File Agent to organize your workspace, create project files, and read document contents.
+Interactive Code Execution (Sandbox/REPL):
+Create a Python execution tool that runs code written by the Coding Agent, captures standard output, and feeds syntax errors back to the AI for auto-debugging.
+OS Process Detection:
+Instead of just opening and closing apps blindly, add a tool that queries running processes (tasklist on Windows). The agent can then tell you if vs-code or Chrome is already open.
+🟡 Level 3: RAG & Profile Memory (Smart Context)
+Optimize performance and keep token costs low.
+
+Vector-Based Semantic Search (RAG):
+Instead of passing the last 10 messages from memory.json, convert historical entries into vector embeddings (using a lightweight library like ChromaDB or FAISS). When you type a query, the agent pulls the most relevant past experiences.
+User Profile Memory:
+Build a tool that lets the agents read/write to a structured user_profile.json file. It should remember facts about you (e.g., your preferred language, workspace paths, OS, API keys).
+Workspace Awareness:
+Let the agents scan your active directory structure, allowing them to answer queries like: "Review the Python files in my current workspace and tell me if there are any bugs."
+🟠 Level 4: Multi-Step Planner & Function Calling (The ReAct Loop)
+Shift from strict routing to dynamic execution.
+
+ReAct (Reason + Action) Loop:
+Instead of 
+
+manager.py
+ picking just one agent, let the coordinator model think in steps.
+It will output a Thought -> select Action -> receive Observation -> repeat until the goal is met.
+Multi-Agent Collaboration:
+Enable agents to speak to each other. For example:
+Planner decomposes the task.
+Browser Agent searches the web for documentation.
+Coding Agent writes the script.
+File Agent saves the script.
+Sandbox Agent runs the script and verifies it works.
+Custom Tool Registration:
+Write a system where you can add new Python tools to a folder, and the agents automatically read their docstrings and learn how to use them.
+🔴 Level 5: Full Autonomous Agent (OSWorld & Vision-capable)
+State-of-the-art capability similar to advanced AI coding assistants.
+
+Vision-Driven Web Automation:
+Integrate browser controllers like Playwright or Selenium. The agent can open a real browser window, take screenshots, navigate pages, click buttons, bypass captchas, and download files autonomously.
+OS World Control (GUI Agent):
+Use vision models (like GPT-4o or Claude 3.5 Sonnet) combined with pyautogui to click, type, and control your computer's screen dynamically. It will act exactly like a human sitting in front of your desktop.
+Self-Correction & Goal Verification:
+Give the agent a "verify" step. For example, if it builds a webpage, it takes a screenshot of the page, evaluates the visual appearance, and modifies the HTML/CSS if the buttons look misaligned.

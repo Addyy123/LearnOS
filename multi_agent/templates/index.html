@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Multi-Agent AI Orchestrator - A collaborative AI system with specialized agents for browsing, coding, file management, and more.">
+    <title>Agent Addyy</title>
+    <!-- Prevent favicon 404 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Marked.js & Highlight.js for Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- DOMPurify for XSS protection -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+    <!-- Feather Icons for UI -->
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <button id="new-chat-btn" class="new-chat-btn">
+                    <i data-feather="plus"></i>
+                    New Chat
+                </button>
+                <button id="close-sidebar-btn" class="icon-btn close-sidebar-icon desktop-only">
+                    <i data-feather="x"></i>
+                </button>
+            </div>
+            
+            <div class="sidebar-search">
+                <div class="search-input-wrapper">
+                    <i data-feather="search" class="search-icon"></i>
+                    <input type="text" id="sidebar-search-input" placeholder="Search conversations...">
+                </div>
+            </div>
+
+            <div class="sidebar-content">
+                <!-- Grouping containers will be managed by JS -->
+                <div id="session-groups-container">
+                    <div class="session-group">
+                        <h4 class="session-group-title">TODAY</h4>
+                        <ul id="session-list" class="session-list">
+                            <!-- Sessions injected here -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar user-avatar">U</div>
+                    <span class="user-name">User</span>
+                    <button class="icon-btn settings-btn"><i data-feather="settings"></i></button>
+                </div>
+                <div class="agent-status">
+                    <span class="status-dot"></span>
+                    <span>System Online</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-container">
+            <header class="top-bar">
+                <div class="top-bar-left">
+                    <button id="toggle-sidebar-btn" class="icon-btn mobile-only">
+                        <i data-feather="menu"></i>
+                    </button>
+                    <div class="model-selector">
+                        <span>Agent Addyy</span>
+                        <i data-feather="chevron-down" style="width: 16px; height: 16px;"></i>
+                    </div>
+                </div>
+                <div class="top-bar-center">
+                    <h2 class="conversation-title" id="conversation-title">New Conversation</h2>
+                </div>
+                <div class="top-bar-right">
+                    <button class="icon-btn"><i data-feather="share"></i></button>
+                    <button class="icon-btn desktop-only"><i data-feather="more-horizontal"></i></button>
+                </div>
+            </header>
+
+            <main class="chat-container" id="chat-container">
+                <div class="chat-box" id="chat-box">
+                    <!-- Messages will be injected here -->
+                </div>
+                <!-- Empty State (Hidden via JS if messages exist) -->
+                <div class="empty-state" id="empty-state">
+                    <h1 class="greeting">How can I help you today?</h1>
+                    <div class="suggestion-grid">
+                        <div class="suggestion-card" onclick="document.getElementById('user-input').value='Plan a trip to Japan'; document.getElementById('user-input').dispatchEvent(new Event('input'));">
+                            <i data-feather="map"></i>
+                            <p>Plan a trip to Japan</p>
+                        </div>
+                        <div class="suggestion-card" onclick="document.getElementById('user-input').value='Write a Python script for...'; document.getElementById('user-input').dispatchEvent(new Event('input'));">
+                            <i data-feather="code"></i>
+                            <p>Write a Python script for...</p>
+                        </div>
+                        <div class="suggestion-card" onclick="document.getElementById('user-input').value='Summarize this article'; document.getElementById('user-input').dispatchEvent(new Event('input'));">
+                            <i data-feather="file-text"></i>
+                            <p>Summarize this article</p>
+                        </div>
+                        <div class="suggestion-card" onclick="document.getElementById('user-input').value='Explain quantum computing'; document.getElementById('user-input').dispatchEvent(new Event('input'));">
+                            <i data-feather="zap"></i>
+                            <p>Explain quantum computing</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-spacer"></div>
+            </main>
+
+            <div class="input-container-wrapper">
+                <div class="input-container">
+                    <button class="action-btn attach-btn">
+                        <i data-feather="paperclip"></i>
+                    </button>
+                    <textarea id="user-input" placeholder="Message Agent Addyy..." rows="1"></textarea>
+                    <button class="action-btn voice-btn">
+                        <i data-feather="mic"></i>
+                    </button>
+                    <button id="send-btn" class="send-btn" disabled>
+                        <i data-feather="arrow-up" style="stroke-width: 3;"></i>
+                    </button>
+                </div>
+                <div class="disclaimer">
+                    Agent Addyy can make mistakes. Consider verifying important information.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        // Initialize Feather icons after the DOM is fully loaded.
+        document.addEventListener("DOMContentLoaded", () => {
+            feather.replace();
+        });
+    </script>
+</body>
+
+</html>
