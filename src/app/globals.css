@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+:root {
+  /* Duolingo-inspired Light Mode */
+  --background: #F7F7F9;
+  --foreground: #4B4B4B;
+  
+  /* Brand accents */
+  --primary: #1CB0F6;
+  --primary-hover: #1899D6;
+  --secondary: #58CC02;
+  --secondary-hover: #46A302;
+  --warning: #FFC800;
+  --error: #FF4B4B;
+  
+  /* UI elements */
+  --panel-bg: #FFFFFF;
+  --panel-border: #E5E5E5;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-panel: var(--panel-bg);
+  --color-panel-border: var(--panel-border);
+  --font-sans: var(--font-nunito);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-nunito), sans-serif;
+}
+
+/* Global Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Tactile Utilities */
+@layer components {
+  .btn-tactile {
+    @apply rounded-xl font-bold transition-all duration-150 active:translate-y-1 active:border-b-0;
+  }
+  .btn-tactile-primary {
+    @apply rounded-xl font-bold transition-all duration-150 active:translate-y-1 active:border-b-0 bg-primary text-white border-b-4 border-primary-hover hover:brightness-110 px-4 py-2;
+  }
+  .btn-tactile-secondary {
+    @apply rounded-xl font-bold transition-all duration-150 active:translate-y-1 active:border-b-0 bg-secondary text-white border-b-4 border-secondary-hover hover:brightness-110 px-4 py-2;
+  }
+  .card-tactile {
+    @apply bg-panel border-2 border-panel-border rounded-2xl shadow-sm p-4;
+  }
+}

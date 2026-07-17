@@ -1,0 +1,348 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  config    String?  @default("{}") // SQLite doesn't have Json type
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  users         User[]
+  concepts      Concept[]
+  assets        ContentAsset[]
+  mastery       MasteryState[]
+  events        LearningEvent[]
+  conversations AiConversation[]
+  goals         Goal[]
+  classrooms    Classroom[]
+  assignments   Assignment[]
+  conceptEdges  ConceptEdge[]
+  plans         Plan[]
+  interventionAlerts InterventionAlert[]
+  aiTokenUsages AITokenUsage[]
+
+  @@map("tenants")
+}
+
+model User {
+  id             String   @id @default(uuid())
+  tenantId       String   @map("tenant_id")
+  email          String   @unique
+  hashedPassword String?  @map("hashed_password")
+  role           String   // 'LEARNER', 'EDUCATOR', etc.
+  isVerified     Boolean  @default(false) @map("is_verified")
+  ageRegion      String?  @map("age_region")
+  consentStatus  String?  @map("consent_status")
+  onboardingCompleted Boolean @default(false) @map("onboarding_completed")
+  
+  // Gamification
+  xp             Int      @default(0)
+  currentStreak  Int      @default(0) @map("current_streak")
+  lastActiveDate DateTime? @map("last_active_date")
+  
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @map("updated_at")
+
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  mastery        MasteryState[]
+  events         LearningEvent[]
+  conversations  AiConversation[]
+  goals          Goal[]
+  plans          Plan[]
+  interventionAlerts InterventionAlert[]
+  aiTokenUsages  AITokenUsage[]
+  
+  // EDU and FAMILY expansion
+  classrooms     Classroom[]
+  enrollments    ClassroomEnrollment[]
+  learners       GuardianLink[] @relation("GuardianToLearner")
+  guardians      GuardianLink[] @relation("LearnerToGuardian")
+
+  @@index([tenantId])
+  @@map("users")
+}
+
+model Concept {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  description String?
+  version     Int      @default(1)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  assets      ContentAsset[]
+  mastery     MasteryState[]
+  events      LearningEvent[]
+  conversations AiConversation[]
+  assignments Assignment[]
+  sourceEdges ConceptEdge[] @relation("SourceEdges")
+  targetEdges ConceptEdge[] @relation("TargetEdges")
+  planItems   PlanItem[]
+
+  @@map("concepts")
+}
+
+model ContentAsset {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  conceptId   String?  @map("concept_id")
+  type        String
+  body        String
+  
+  // Vector embeddings stored as serialized JSON array for MVP Phase 5
+  embedding   String?
+  
+  isApproved  Boolean  @default(false) @map("is_approved")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  concept     Concept? @relation(fields: [conceptId], references: [id])
+
+  @@map("content_assets")
+}
+
+model MasteryState {
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  userId        String   @map("user_id")
+  conceptId     String   @map("concept_id")
+  probability   Float    @default(0.0) // SQLite doesn't have Decimal
+  evidenceCount Int      @default(0) @map("evidence_count")
+  
+  // Spaced Repetition (SM-2) Fields
+  nextReviewDate DateTime @default(now()) @map("next_review_date")
+  easeFactor    Float    @default(2.5) @map("ease_factor")
+  interval      Int      @default(0)
+  consecutiveCorrect Int @default(0) @map("consecutive_correct")
+  
+  updatedAt     DateTime @default(now()) @map("updated_at")
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  user          User     @relation(fields: [userId], references: [id])
+  concept       Concept  @relation(fields: [conceptId], references: [id])
+
+  @@unique([userId, conceptId])
+  @@map("mastery_states")
+}
+
+model LearningEvent {
+  id              String   @id @default(uuid())
+  tenantId        String   @map("tenant_id")
+  userId          String   @map("user_id")
+  conceptId       String   @map("concept_id")
+  eventType       String   @map("event_type")
+  isCorrect       Boolean? @map("is_correct")
+  confidenceScore Int?     @map("confidence_score")
+  occurredAt      DateTime @default(now()) @map("occurred_at")
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  user            User     @relation(fields: [userId], references: [id])
+  concept         Concept  @relation(fields: [conceptId], references: [id])
+
+  @@map("learning_events")
+}
+
+model AiConversation {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  userId      String   @map("user_id")
+  conceptId   String?  @map("concept_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+  concept     Concept? @relation(fields: [conceptId], references: [id])
+  messages    AiMessage[]
+
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id              String   @id @default(uuid())
+  conversationId  String   @map("conversation_id")
+  role            String
+  content         String
+  citations       String?  @default("[]") // SQLite doesn't have Json type
+  safetyFlag      Boolean  @default(false) @map("safety_flag")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  conversation    AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("ai_messages")
+}
+
+model Goal {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  userId      String   @map("user_id")
+  title       String
+  description String?
+  targetDate  DateTime? @map("target_date")
+  status      String   @default("ACTIVE") // ACTIVE, COMPLETED
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @map("updated_at")
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("goals")
+}
+
+model Classroom {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  educatorId  String   @map("educator_id")
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @map("updated_at")
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  educator    User     @relation(fields: [educatorId], references: [id])
+  enrollments ClassroomEnrollment[]
+  assignments Assignment[]
+
+  @@map("classrooms")
+}
+
+model ClassroomEnrollment {
+  id          String   @id @default(uuid())
+  classroomId String   @map("classroom_id")
+  learnerId   String   @map("learner_id")
+  joinedAt    DateTime @default(now()) @map("joined_at")
+
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  learner     User      @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+
+  @@unique([classroomId, learnerId])
+  @@map("classroom_enrollments")
+}
+
+model Assignment {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  classroomId String   @map("classroom_id")
+  conceptId   String   @map("concept_id")
+  title       String
+  dueDate     DateTime? @map("due_date")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  concept     Concept   @relation(fields: [conceptId], references: [id])
+
+  @@map("assignments")
+}
+
+model GuardianLink {
+  id          String   @id @default(uuid())
+  guardianId  String   @map("guardian_id")
+  learnerId   String   @map("learner_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  guardian    User     @relation("GuardianToLearner", fields: [guardianId], references: [id], onDelete: Cascade)
+  learner     User     @relation("LearnerToGuardian", fields: [learnerId], references: [id], onDelete: Cascade)
+
+  @@unique([guardianId, learnerId])
+  @@map("guardian_links")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model PasswordResetToken {
+  email      String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([email, token])
+  @@map("password_reset_tokens")
+}
+
+model ConceptEdge {
+  id              String   @id @default(uuid())
+  tenantId        String   @map("tenant_id")
+  sourceConceptId String   @map("source_concept_id")
+  targetConceptId String   @map("target_concept_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  sourceConcept   Concept  @relation("SourceEdges", fields: [sourceConceptId], references: [id], onDelete: Cascade)
+  targetConcept   Concept  @relation("TargetEdges", fields: [targetConceptId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceConceptId, targetConceptId])
+  @@map("concept_edges")
+}
+
+model Plan {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  userId      String   @map("user_id")
+  title       String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @map("updated_at")
+
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       PlanItem[]
+
+  @@map("plans")
+}
+
+model PlanItem {
+  id          String   @id @default(uuid())
+  planId      String   @map("plan_id")
+  conceptId   String   @map("concept_id")
+  status      String   @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
+  order       Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @map("updated_at")
+
+  plan        Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  concept     Concept  @relation(fields: [conceptId], references: [id])
+
+  @@map("plan_items")
+}
+
+model InterventionAlert {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  userId      String   @map("user_id")
+  reason      String
+  status      String   @default("OPEN") // OPEN, RESOLVED
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("intervention_alerts")
+}
+
+model AITokenUsage {
+  id              String   @id @default(uuid())
+  tenantId        String   @map("tenant_id")
+  userId          String   @map("user_id")
+  model           String
+  estimatedTokens Int      @map("estimated_tokens")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ai_token_usage")
+}
