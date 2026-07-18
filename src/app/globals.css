@@ -18,6 +18,23 @@
   --panel-border: #E5E5E5;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0B0F19;
+    --foreground: #F8FAFC;
+    
+    --primary: #29BAFF;
+    --primary-hover: #1CA3E6;
+    --secondary: #65D60F;
+    --secondary-hover: #50B303;
+    --warning: #FFD13B;
+    --error: #FF6B6B;
+    
+    --panel-bg: #141B2D;
+    --panel-border: #1E293B;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

@@ -395,7 +395,7 @@ export default function TutorPage() {
   return (
     <div className="max-w-4xl mx-auto h-[calc(100dvh-4rem)] md:h-[calc(100vh-8rem)] flex flex-col card-tactile p-0 overflow-hidden mb-16 md:mb-0">
       {/* Chat Header */}
-      <div className="p-4 border-b-2 border-panel-border flex items-center gap-4 bg-sky-50">
+      <div className="p-4 border-b-2 border-[var(--panel-border)] flex items-center gap-4 bg-primary/10">
         <div className="w-12 h-12 bg-primary text-white rounded-xl flex items-center justify-center shadow-sm">
           <Bot className="w-7 h-7" />
         </div>
@@ -406,7 +406,7 @@ export default function TutorPage() {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-black/5">
         {messages.length === 0 && (
           <div className="text-center mt-10">
             <Bot className="w-16 h-16 mx-auto mb-4 text-gray-300" />
@@ -428,8 +428,8 @@ export default function TutorPage() {
               <div
                 className={`p-4 rounded-2xl whitespace-pre-wrap font-medium border-2 ${
                   msg.role === "user"
-                    ? "bg-secondary/10 border-secondary text-foreground rounded-tr-sm"
-                    : "bg-white border-panel-border text-foreground rounded-tl-sm shadow-sm"
+                    ? "bg-secondary/10 border-secondary/30 text-foreground rounded-tr-sm"
+                    : "bg-[var(--panel-bg)] border-[var(--panel-border)] text-foreground rounded-tl-sm shadow-sm"
                 }`}
               >
                 {msg.imageUrl && (
@@ -477,7 +477,7 @@ export default function TutorPage() {
       </div>
 
       {/* Input Area with Prompt Chips */}
-      <div className="p-4 border-t-2 border-panel-border bg-white flex flex-col">
+      <div className="p-4 border-t-2 border-[var(--panel-border)] bg-[var(--panel-bg)] flex flex-col">
         {/* Suggested Prompts */}
         {messages.length < 2 && !isLoading && (
           <div className="flex flex-wrap gap-2 mb-4">
@@ -485,7 +485,7 @@ export default function TutorPage() {
               <button
                 key={idx}
                 onClick={() => handleSendPrompt(prompt)}
-                className="flex items-center gap-1 px-3 py-1.5 bg-sky-50 border-2 border-sky-100 hover:border-primary text-primary rounded-full text-sm font-bold transition-all active:scale-95"
+                className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 border-2 border-primary/20 hover:border-primary text-primary rounded-full text-sm font-bold transition-all active:scale-95"
               >
                 <Lightbulb className="w-4 h-4" />
                 {prompt}
@@ -494,7 +494,7 @@ export default function TutorPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2 bg-slate-50 border-2 border-panel-border focus-within:border-primary focus-within:bg-white rounded-2xl p-2 transition-all shadow-sm">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2 bg-[var(--panel-bg)] border-2 border-[var(--panel-border)] focus-within:border-primary rounded-2xl p-2 transition-all shadow-sm">
           {selectedImage && (
             <div className="relative inline-block ml-2 mt-2 w-max">
               <img src={selectedImage} alt="Preview" className="h-20 rounded-xl border-2 border-panel-border" />
@@ -512,7 +512,7 @@ export default function TutorPage() {
             <button
               type="button"
               onClick={() => setShowOptions(!showOptions)}
-              className="p-2.5 rounded-xl transition-colors flex items-center justify-center text-gray-500 hover:bg-gray-200 bg-gray-100/50 mb-0.5"
+              className="p-2.5 rounded-xl transition-colors flex items-center justify-center text-muted-foreground hover:bg-black/10 bg-black/5 mb-0.5"
               title="More options"
             >
               {showOptions ? <X className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
@@ -530,7 +530,7 @@ export default function TutorPage() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-2.5 rounded-xl transition-colors flex items-center justify-center text-gray-500 hover:bg-gray-200 bg-gray-100/50"
+                  className="p-2.5 rounded-xl transition-colors flex items-center justify-center text-muted-foreground hover:bg-black/10 bg-black/5"
                   title="Attach Image"
                 >
                   <ImagePlus className="w-5 h-5" />
@@ -541,7 +541,7 @@ export default function TutorPage() {
                   className={`p-2.5 rounded-xl transition-colors flex items-center justify-center ${
                     isListening 
                       ? "bg-error/10 text-error animate-pulse" 
-                      : "text-gray-500 hover:bg-gray-200 bg-gray-100/50"
+                      : "text-gray-500 hover:bg-black/10 bg-black/5"
                   }`}
                   title={isListening ? "Stop listening" : "Start speaking"}
                 >
@@ -556,7 +556,7 @@ export default function TutorPage() {
                   className={`p-2.5 rounded-xl transition-colors flex items-center justify-center ${
                     isAutoSpeak 
                       ? "bg-primary/10 text-primary" 
-                      : "text-gray-500 hover:bg-gray-200 bg-gray-100/50"
+                      : "text-gray-500 hover:bg-black/10 bg-black/5"
                   }`}
                   title={isAutoSpeak ? "Auto-speak enabled" : "Auto-speak disabled"}
                 >

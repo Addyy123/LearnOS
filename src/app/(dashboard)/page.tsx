@@ -2,6 +2,7 @@ import { Flame, Trophy, Play, CheckCircle2, Lock } from "lucide-react"
 import { auth } from "@/modules/identity/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
+import { Mascot } from "@/components/ui/Mascot"
 import Link from "next/link"
 
 export default async function DashboardPage() {
@@ -46,13 +47,16 @@ export default async function DashboardPage() {
 
   return (
     <div className="w-full flex flex-col items-center pb-24">
-      {/* Greeting Card */}
+      {/* Welcome & Stats Row */}
       <div className="w-full max-w-2xl mb-12 bg-[var(--panel-bg)] border border-[var(--panel-border)] rounded-3xl p-6 md:p-8 backdrop-blur-xl shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2 text-center md:text-left">
-            {user.email ? `Welcome back, ${user.email.split('@')[0]}!` : "Welcome back!"}
-          </h1>
-          <p className="text-foreground/60 text-center md:text-left">Ready to continue your learning journey?</p>
+        <div className="flex flex-col md:flex-row items-center gap-6">
+          <Mascot state="idle" />
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2 text-center md:text-left">
+              {user.email ? `Welcome back, ${user.email.split('@')[0]}!` : "Welcome back!"}
+            </h1>
+            <p className="text-foreground/60 text-center md:text-left">Ready to continue your learning journey?</p>
+          </div>
         </div>
         <div className="flex items-center gap-6 bg-black/5 p-4 rounded-2xl w-full md:w-auto justify-center">
           <div className="flex flex-col items-center">

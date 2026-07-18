@@ -2,8 +2,10 @@
 
 import { useState } from "react"
 import { submitPracticeResults } from "@/modules/learning/actions"
+import { triggerFeedback } from "@/lib/feedback"
 import { useRouter } from "next/navigation"
 import { CheckCircle2, XCircle, ArrowRight, Trophy } from "lucide-react"
+import { Mascot } from "@/components/ui/Mascot"
 
 type Question = {
   question: string
@@ -35,9 +37,13 @@ export function PracticeUI({ conceptId, conceptName, quizData }: Props) {
 
   const handleCheck = () => {
     if (selectedOption === null) return
+    
     setIsAnswered(true)
     if (selectedOption === currentQ.answerIndex) {
       setScore(score + 1)
+      triggerFeedback('correct')
+    } else {
+      triggerFeedback('incorrect')
     }
   }
 
@@ -56,6 +62,7 @@ export function PracticeUI({ conceptId, conceptName, quizData }: Props) {
         await submitPracticeResults(conceptId, percentage)
         setIsFinished(true)
         if (percentage === 100) {
+          triggerFeedback('mastery')
           const confetti = (await import('canvas-confetti')).default;
           confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         }
@@ -102,7 +109,10 @@ export function PracticeUI({ conceptId, conceptName, quizData }: Props) {
         />
       </div>
 
-      {/* Question Card */}
+      {/* Mascot & Question Card */}
+      <div className="flex justify-center mb-6">
+        <Mascot state={!isAnswered ? 'thinking' : selectedOption === currentQ?.answerIndex ? 'happy' : 'sad'} />
+      </div>
       <div className="bg-[var(--panel-bg)] border border-[var(--panel-border)] rounded-3xl p-8 backdrop-blur-xl shadow-2xl mb-8">
         <h3 className="text-2xl font-bold text-foreground mb-8 leading-relaxed">
           {currentQ.question}
