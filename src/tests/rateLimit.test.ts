@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert";
-import { checkRateLimit } from "../lib/security/rateLimit";
+import { checkRateLimit } from "../lib/security/rateLimit.ts";
 
 test("Rate Limit Logic", async (t) => {
   await t.test("allows initial requests within limit", () => {
