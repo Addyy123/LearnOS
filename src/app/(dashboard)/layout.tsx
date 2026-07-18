@@ -12,12 +12,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { onboardingCompleted: true, role: true }
+    select: { onboardingCompleted: true, role: true, email: true }
   })
 
   if (user && !user.onboardingCompleted) {
     redirect("/onboarding")
   }
+
+  const initials = user?.email?.substring(0, 2).toUpperCase() || "US";
 
   return (
     <div className="min-h-screen flex bg-background pb-20 md:pb-0">
@@ -27,10 +29,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-screen overflow-y-auto animate-fade-in relative">
         <header className="h-16 border-b-2 border-panel-border bg-panel flex items-center justify-between px-8 sticky top-0 z-10 shadow-sm">
-          <h2 className="font-bold text-foreground text-lg hidden md:block">Learner View</h2>
+          <div className="flex-1"></div>
           <div className="flex items-center gap-4 ml-auto">
+            <span className="hidden md:block font-bold text-foreground">{user?.email}</span>
             <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-white font-bold border-b-4 border-secondary-hover">
-              JD
+              {initials}
             </div>
           </div>
         </header>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react"
-import { Send, User, Bot, Mic, MicOff, Volume2, VolumeX, Square, ImagePlus, X, Lightbulb } from "lucide-react"
+import { Send, User, Bot, Mic, MicOff, Volume2, VolumeX, Square, ImagePlus, X, Lightbulb, Copy, Check, Plus } from "lucide-react"
 
 type Message = {
   id: string
@@ -24,8 +24,10 @@ export default function TutorPage() {
   const [isLoading, setIsLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [conversationId, setConversationId] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [showOptions, setShowOptions] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   
   const [isListening, setIsListening] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -72,10 +74,24 @@ export default function TutorPage() {
 
   useEffect(() => {
     if (!isLoading) {
-      // Small timeout ensures the DOM has updated and the input is no longer disabled
-      setTimeout(() => inputRef.current?.focus(), 0)
+      setTimeout(() => textareaRef.current?.focus(), 0)
     }
   }, [isLoading])
+
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value)
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSubmit(e as any)
+    }
+  }
 
   useEffect(() => {
     // Fetch initial chat history
@@ -282,8 +298,102 @@ export default function TutorPage() {
     }
   }
 
+  const handleSendPrompt = (prompt: string) => {
+    setInput(prompt)
+    // We need to wait for state to update, or just bypass state for this submission
+    setTimeout(() => {
+      const formEvent = new Event('submit', { cancelable: true, bubbles: true }) as unknown as React.FormEvent;
+      // We manually construct the message
+      if (isLoading) return
+      
+      const userMsg: Message = { 
+        id: Date.now().toString(), 
+        role: "user", 
+        content: prompt
+      }
+      
+      const newMessages = [...messages, userMsg]
+      setMessages(newMessages)
+      setInput("")
+      setIsLoading(true)
+      
+      const aiMsgId = (Date.now() + 1).toString()
+      setMessages((prev) => [...prev, { id: aiMsgId, role: "assistant", content: "" }])
+      
+      // Fire off API request
+      fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: newMessages.map((m) => ({ 
+            role: m.role, 
+            content: m.content
+          })),
+          conversationId,
+        }),
+      }).then(async (response) => {
+        if (!response.ok || !response.body) throw new Error("API error")
+        const activeConvId = response.headers.get("X-Conversation-Id")
+        if (activeConvId && !conversationId) setConversationId(activeConvId)
+        
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let finalAiMsg = ""
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split("\n")
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue
+            const data = line.slice(6).trim()
+            if (data === "[DONE]") break
+            try {
+              const parsed = JSON.parse(data)
+              const token = parsed.choices?.[0]?.delta?.content
+              if (token) {
+                finalAiMsg += token
+                setMessages((prev) => prev.map((m) => m.id === aiMsgId ? { ...m, content: m.content + token } : m))
+              }
+            } catch {}
+          }
+        }
+        if (isAutoSpeak && finalAiMsg.trim()) speakText(finalAiMsg)
+      }).catch(err => {
+        console.error(err)
+        setMessages((prev) => prev.map((m) => m.id === aiMsgId ? { ...m, content: "Sorry, error connecting." } : m))
+      }).finally(() => setIsLoading(false))
+
+    }, 10)
+  }
+
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  // Very lightweight markdown formatter for bold and italic
+  const formatMarkdown = (text: string) => {
+    if (!text) return null
+    // Simple replacement for **bold** and *italic*
+    const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g)
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} className="font-extrabold text-foreground">{part.slice(2, -2)}</strong>
+      }
+      if (part.startsWith('*') && part.endsWith('*')) {
+        return <em key={i} className="italic">{part.slice(1, -1)}</em>
+      }
+      if (part.startsWith('`') && part.endsWith('`')) {
+        return <code key={i} className="bg-black/10 px-1 py-0.5 rounded text-sm font-mono text-primary">{part.slice(1, -1)}</code>
+      }
+      return <span key={i}>{part}</span>
+    })
+  }
+
   return (
-    <div className="max-w-4xl mx-auto h-[calc(100vh-8rem)] flex flex-col card-tactile p-0 overflow-hidden">
+    <div className="max-w-4xl mx-auto h-[calc(100dvh-4rem)] md:h-[calc(100vh-8rem)] flex flex-col card-tactile p-0 overflow-hidden mb-16 md:mb-0">
       {/* Chat Header */}
       <div className="p-4 border-b-2 border-panel-border flex items-center gap-4 bg-sky-50">
         <div className="w-12 h-12 bg-primary text-white rounded-xl flex items-center justify-center shadow-sm">
@@ -325,28 +435,39 @@ export default function TutorPage() {
                 {msg.imageUrl && (
                   <img src={msg.imageUrl} alt="Attached" className="max-w-full h-auto rounded-xl mb-2 border-2 border-panel-border" />
                 )}
-                {msg.content || (msg.role === "assistant" && isLoading ? (
+                {msg.content ? formatMarkdown(msg.content) : (msg.role === "assistant" && isLoading ? (
                   <span className="text-gray-400 font-bold animate-pulse">Thinking...</span>
                 ) : null)}
               </div>
               {msg.role === "assistant" && !isLoading && msg.content && (
-                <div className="flex gap-2 mt-1">
+                <div className="flex gap-4 mt-1">
                   <button 
                     onClick={() => speakText(msg.content)}
-                    className="text-xs text-foreground/50 hover:text-cyan-400 transition-colors flex items-center gap-1"
+                    className="text-xs text-foreground/50 hover:text-primary transition-colors flex items-center gap-1 font-bold"
                     title="Read aloud"
                   >
-                    <Volume2 className="w-3 h-3" /> Play
+                    <Volume2 className="w-3.5 h-3.5" /> Play
                   </button>
                   {isSpeaking && (
                     <button 
                       onClick={stopSpeaking}
-                      className="text-xs text-foreground/50 hover:text-red-400 transition-colors flex items-center gap-1"
+                      className="text-xs text-foreground/50 hover:text-red-400 transition-colors flex items-center gap-1 font-bold"
                       title="Stop reading"
                     >
-                      <Square className="w-3 h-3" /> Stop
+                      <Square className="w-3.5 h-3.5" /> Stop
                     </button>
                   )}
+                  <button 
+                    onClick={() => copyToClipboard(msg.content, msg.id)}
+                    className="text-xs text-foreground/50 hover:text-primary transition-colors flex items-center gap-1 font-bold"
+                    title="Copy message"
+                  >
+                    {copiedId === msg.id ? (
+                      <><Check className="w-3.5 h-3.5 text-secondary" /> Copied!</>
+                    ) : (
+                      <><Copy className="w-3.5 h-3.5" /> Copy</>
+                    )}
+                  </button>
                 </div>
               )}
             </div>
@@ -363,7 +484,7 @@ export default function TutorPage() {
             {suggestedPrompts.map((prompt, idx) => (
               <button
                 key={idx}
-                onClick={() => setInput(prompt)}
+                onClick={() => handleSendPrompt(prompt)}
                 className="flex items-center gap-1 px-3 py-1.5 bg-sky-50 border-2 border-sky-100 hover:border-primary text-primary rounded-full text-sm font-bold transition-all active:scale-95"
               >
                 <Lightbulb className="w-4 h-4" />
@@ -373,78 +494,97 @@ export default function TutorPage() {
           </div>
         )}
 
-        {selectedImage && (
-          <div className="mb-4 relative inline-block">
-            <img src={selectedImage} alt="Preview" className="h-20 rounded-xl border-2 border-panel-border" />
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2 bg-slate-50 border-2 border-panel-border focus-within:border-primary focus-within:bg-white rounded-2xl p-2 transition-all shadow-sm">
+          {selectedImage && (
+            <div className="relative inline-block ml-2 mt-2 w-max">
+              <img src={selectedImage} alt="Preview" className="h-20 rounded-xl border-2 border-panel-border" />
+              <button
+                type="button"
+                onClick={() => setSelectedImage(null)}
+                className="absolute -top-2 -right-2 bg-error text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-end gap-2">
             <button
               type="button"
-              onClick={() => setSelectedImage(null)}
-              className="absolute -top-2 -right-2 bg-error text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition-colors"
+              onClick={() => setShowOptions(!showOptions)}
+              className="p-2.5 rounded-xl transition-colors flex items-center justify-center text-gray-500 hover:bg-gray-200 bg-gray-100/50 mb-0.5"
+              title="More options"
             >
-              <X className="w-4 h-4" />
+              {showOptions ? <X className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
+            </button>
+            
+            {showOptions && (
+              <div className="flex items-center gap-2 animate-fade-in mb-0.5">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleImageSelect}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-2.5 rounded-xl transition-colors flex items-center justify-center text-gray-500 hover:bg-gray-200 bg-gray-100/50"
+                  title="Attach Image"
+                >
+                  <ImagePlus className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  className={`p-2.5 rounded-xl transition-colors flex items-center justify-center ${
+                    isListening 
+                      ? "bg-error/10 text-error animate-pulse" 
+                      : "text-gray-500 hover:bg-gray-200 bg-gray-100/50"
+                  }`}
+                  title={isListening ? "Stop listening" : "Start speaking"}
+                >
+                  {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isAutoSpeak) stopSpeaking()
+                    setIsAutoSpeak(!isAutoSpeak)
+                  }}
+                  className={`p-2.5 rounded-xl transition-colors flex items-center justify-center ${
+                    isAutoSpeak 
+                      ? "bg-primary/10 text-primary" 
+                      : "text-gray-500 hover:bg-gray-200 bg-gray-100/50"
+                  }`}
+                  title={isAutoSpeak ? "Auto-speak enabled" : "Auto-speak disabled"}
+                >
+                  {isAutoSpeak ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                </button>
+              </div>
+            )}
+            
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={handleInput}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask your tutor a question..."
+              className="flex-1 bg-transparent resize-none px-2 py-2.5 text-foreground font-medium focus:outline-none min-h-[44px] max-h-[200px]"
+              disabled={isLoading}
+              rows={1}
+              autoFocus
+            />
+            
+            <button
+              type="submit"
+              disabled={isLoading || (!input.trim() && !selectedImage)}
+              className="btn-tactile-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center h-11 w-11 p-0 shrink-0 mb-0.5"
+            >
+              <Send className="w-5 h-5" />
             </button>
           </div>
-        )}
-        <form onSubmit={handleSubmit} className="flex gap-2 items-center">
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            ref={fileInputRef}
-            onChange={handleImageSelect}
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="p-3 rounded-xl transition-colors flex items-center justify-center border-2 bg-slate-50 border-panel-border text-gray-500 hover:bg-gray-100"
-            title="Attach Image"
-          >
-            <ImagePlus className="w-6 h-6" />
-          </button>
-          <button
-            type="button"
-            onClick={toggleListening}
-            className={`p-3 rounded-xl transition-colors flex items-center justify-center border-2 ${
-              isListening 
-                ? "bg-error/10 border-error text-error animate-pulse" 
-                : "bg-slate-50 border-panel-border text-gray-500 hover:bg-gray-100"
-            }`}
-            title={isListening ? "Stop listening" : "Start speaking"}
-          >
-            {isListening ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (isAutoSpeak) stopSpeaking()
-              setIsAutoSpeak(!isAutoSpeak)
-            }}
-            className={`p-3 rounded-xl transition-colors flex items-center justify-center border-2 ${
-              isAutoSpeak 
-                ? "bg-primary/10 border-primary text-primary" 
-                : "bg-slate-50 border-panel-border text-gray-500 hover:bg-gray-100"
-            }`}
-            title={isAutoSpeak ? "Auto-speak enabled" : "Auto-speak disabled"}
-          >
-            {isAutoSpeak ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
-          </button>
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask your tutor a question..."
-            className="flex-1 bg-slate-50 border-2 border-panel-border rounded-xl px-4 py-3 text-foreground font-medium focus:outline-none focus:border-primary focus:bg-white transition-all min-w-0"
-            disabled={isLoading}
-            autoFocus
-          />
-          <button
-            type="submit"
-            disabled={isLoading || (!input.trim() && !selectedImage)}
-            className="btn-tactile-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center h-[52px] w-[52px] p-0 shrink-0"
-          >
-            <Send className="w-6 h-6" />
-          </button>
         </form>
       </div>
     </div>

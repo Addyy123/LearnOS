@@ -34,8 +34,8 @@ export default async function DashboardPage() {
   // Winding offset pattern for the path (0, 1, 2, 1, 0, -1, -2, -1)
   const getOffsetClass = (index: number) => {
     const pattern = [
-      "ml-0", "ml-16", "ml-32", "ml-16",
-      "ml-0", "-ml-16", "-ml-32", "-ml-16"
+      "ml-0", "ml-8 md:ml-16", "ml-16 md:ml-32", "ml-8 md:ml-16",
+      "ml-0", "-ml-8 md:-ml-16", "-ml-16 md:-ml-32", "-ml-8 md:-ml-16"
     ];
     return pattern[index % pattern.length];
   }
@@ -46,20 +46,41 @@ export default async function DashboardPage() {
 
   return (
     <div className="w-full flex flex-col items-center pb-24">
-      {/* Top Stats Bar */}
-      <div className="w-full max-w-2xl flex justify-between items-center mb-12 p-4 card-tactile">
-        <div className="flex items-center gap-2">
-          <Trophy className="w-6 h-6 text-warning" />
-          <span className="font-bold text-warning">{xp} XP</span>
+      {/* Greeting Card */}
+      <div className="w-full max-w-2xl mb-12 bg-[var(--panel-bg)] border border-[var(--panel-border)] rounded-3xl p-6 md:p-8 backdrop-blur-xl shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2 text-center md:text-left">
+            {user.email ? `Welcome back, ${user.email.split('@')[0]}!` : "Welcome back!"}
+          </h1>
+          <p className="text-foreground/60 text-center md:text-left">Ready to continue your learning journey?</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Flame className={`w-6 h-6 ${streak > 0 ? "text-orange-500" : "text-gray-300"}`} />
-          <span className={`font-bold ${streak > 0 ? "text-orange-500" : "text-gray-400"}`}>{streak}</span>
+        <div className="flex items-center gap-6 bg-black/5 p-4 rounded-2xl w-full md:w-auto justify-center">
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-2 mb-1">
+              <Trophy className="w-5 h-5 text-warning" />
+              <span className="font-bold text-warning text-xl">{xp}</span>
+            </div>
+            <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">Total XP</span>
+          </div>
+          <div className="w-px h-10 bg-black/10"></div>
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-2 mb-1">
+              <Flame className={`w-5 h-5 ${streak > 0 ? "text-orange-500" : "text-gray-300"}`} />
+              <span className={`font-bold text-xl ${streak > 0 ? "text-orange-500" : "text-gray-400"}`}>{streak}</span>
+            </div>
+            <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">Day Streak</span>
+          </div>
         </div>
       </div>
 
       {/* The Learning Path */}
       <div className="flex flex-col items-center w-full relative">
+        {user.tenant.concepts.length > 0 && (
+          <div className="mb-10 bg-secondary/10 text-secondary px-5 py-2.5 rounded-full font-bold text-sm border-2 border-secondary/20 flex items-center gap-2 shadow-sm">
+            <CheckCircle2 className="w-5 h-5" />
+            {user.mastery.filter(m => m.probability >= 80).length} of {user.tenant.concepts.length} Concepts Mastered
+          </div>
+        )}
         {user.tenant.concepts.length === 0 && (
           <div className="card-tactile text-center p-8">
             <h3 className="text-xl font-bold text-foreground mb-4">No Content Found</h3>

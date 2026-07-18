@@ -1,7 +1,8 @@
 import { auth } from "@/modules/identity/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Settings2, UserCircle, Bell, Shield, LogOut, Flame } from "lucide-react"
+import { Settings2, UserCircle, Bell, Shield, Flame } from "lucide-react"
+import Link from "next/link"
 
 export default async function SettingsPage() {
   const session = await auth()
@@ -41,29 +42,31 @@ export default async function SettingsPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-foreground/50 mb-1">Email Address</label>
-                <div className="bg-black/20 border border-[var(--panel-border)] rounded-xl px-4 py-3 text-foreground font-medium">
+                <div className="bg-black/5 border border-[var(--panel-border)] rounded-xl px-4 py-3 text-foreground font-medium">
                   {user.email}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground/50 mb-1">Role</label>
-                  <div className="bg-black/20 border border-[var(--panel-border)] rounded-xl px-4 py-3 text-foreground font-medium capitalize">
+                  <div className="bg-black/5 border border-[var(--panel-border)] rounded-xl px-4 py-3 text-foreground font-medium capitalize">
                     {user.role.toLowerCase()}
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground/50 mb-1">Organization</label>
-                  <div className="bg-black/20 border border-[var(--panel-border)] rounded-xl px-4 py-3 text-foreground font-medium">
+                  <div className="bg-black/5 border border-[var(--panel-border)] rounded-xl px-4 py-3 text-foreground font-medium">
                     {user.tenant.name}
                   </div>
                 </div>
               </div>
             </div>
             <div className="mt-6 flex justify-end">
-              <button className="bg-primary/20 text-primary hover:bg-primary/30 px-6 py-2 rounded-lg font-medium transition-colors">
-                Change Password
-              </button>
+              <Link href="/forgot-password">
+                <button className="bg-primary/10 text-primary hover:bg-primary/20 px-6 py-2 rounded-lg font-bold transition-colors">
+                  Change Password
+                </button>
+              </Link>
             </div>
           </section>
 

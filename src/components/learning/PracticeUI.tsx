@@ -55,6 +55,10 @@ export function PracticeUI({ conceptId, conceptName, quizData }: Props) {
       try {
         await submitPracticeResults(conceptId, percentage)
         setIsFinished(true)
+        if (percentage === 100) {
+          const confetti = (await import('canvas-confetti')).default;
+          confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        }
       } catch (err) {
         console.error(err)
       } finally {
@@ -89,12 +93,12 @@ export function PracticeUI({ conceptId, conceptName, quizData }: Props) {
       {/* Progress Bar */}
       <div className="flex items-center justify-between mb-8 text-sm font-medium text-foreground/50">
         <span>Question {currentIndex + 1} of {quizData.length}</span>
-        <span>Score: {score}</span>
+        <span>Score: {score}/{quizData.length}</span>
       </div>
-      <div className="w-full bg-black/20 h-2 rounded-full mb-12 overflow-hidden">
+      <div className="w-full bg-black/20 h-2 rounded-full mb-12 overflow-hidden relative">
         <div 
           className="bg-primary h-full transition-all duration-500 ease-out" 
-          style={{ width: `${((currentIndex) / quizData.length) * 100}%` }}
+          style={{ width: `${((currentIndex + (isAnswered ? 1 : 0)) / quizData.length) * 100}%` }}
         />
       </div>
 
@@ -135,6 +139,19 @@ export function PracticeUI({ conceptId, conceptName, quizData }: Props) {
             )
           })}
         </div>
+        
+        {isAnswered && selectedOption !== currentQ.answerIndex && (
+          <div className="mt-6 p-4 bg-red-500/10 border-2 border-red-500/20 rounded-xl animate-fade-in">
+            <h4 className="font-bold text-red-500 mb-1">Incorrect</h4>
+            <p className="text-foreground/80 font-medium">The correct answer is: <span className="font-bold">{currentQ.options[currentQ.answerIndex]}</span></p>
+          </div>
+        )}
+        {isAnswered && selectedOption === currentQ.answerIndex && (
+          <div className="mt-6 p-4 bg-green-500/10 border-2 border-green-500/20 rounded-xl animate-fade-in">
+            <h4 className="font-bold text-green-500 mb-1">Correct!</h4>
+            <p className="text-foreground/80 font-medium">Great job.</p>
+          </div>
+        )}
       </div>
 
       {/* Controls */}

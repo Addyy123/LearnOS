@@ -61,9 +61,9 @@ export default async function PlanPage() {
             
             <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
               {activePlan.items.map((item, index) => (
-                <div key={item.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                <div key={item.id} className="relative flex items-center justify-end md:justify-normal md:odd:flex-row-reverse group is-active">
                   {/* Marker */}
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-background bg-[var(--panel-bg)] text-foreground/50 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 relative">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[var(--panel-bg)] bg-white text-foreground/50 shadow shrink-0 absolute left-0 md:static md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
                     {item.status === 'COMPLETED' ? (
                       <CheckCircle2 className="w-5 h-5 text-secondary" />
                     ) : item.status === 'IN_PROGRESS' ? (
@@ -74,7 +74,7 @@ export default async function PlanPage() {
                   </div>
                   
                   {/* Card */}
-                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-black/20 border border-[var(--panel-border)] p-6 rounded-2xl shadow-xl transition-all hover:border-primary/50">
+                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-black/5 border border-[var(--panel-border)] p-6 rounded-2xl shadow-xl transition-all hover:border-primary/50">
                     <div className="flex items-start justify-between mb-2">
                       <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">
                         Step {index + 1}: {item.concept.name}

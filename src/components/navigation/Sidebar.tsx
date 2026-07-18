@@ -25,7 +25,7 @@ export function Sidebar({ role }: { role?: string }) {
   return (
     <>
       {/* DESKTOP SIDEBAR */}
-      <aside className="w-20 lg:w-64 border-r-2 border-panel-border bg-panel hidden md:flex flex-col z-20">
+      <aside className="w-24 lg:w-64 border-r-2 border-panel-border bg-panel hidden md:flex flex-col z-20">
         <div className="p-6 hidden lg:flex items-center gap-3">
           <div className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center shadow-sm">
             <Home className="w-6 h-6" />
@@ -89,18 +89,19 @@ export function Sidebar({ role }: { role?: string }) {
       </aside>
 
       {/* MOBILE BOTTOM BAR */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-panel border-t-2 border-panel-border flex items-center justify-around px-2 py-3 pb-6 z-50">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-panel border-t-2 border-panel-border flex items-center justify-around px-2 py-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] z-50">
         {navItems.map((item) => {
           const isActive = isActiveRoute(item.href)
           return (
             <Link
               key={item.name}
               href={item.href}
-              className={`flex flex-col items-center justify-center w-16 h-12 rounded-xl transition-all ${
+              className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-all ${
                 isActive ? "text-primary" : "text-gray-400"
               }`}
             >
-              <item.icon className={`w-7 h-7 ${isActive ? "text-primary" : "text-gray-400"}`} />
+              <item.icon className={`w-6 h-6 ${isActive ? "text-primary" : "text-gray-400"}`} />
+              <span className="text-[10px] font-bold mt-1">{item.name}</span>
             </Link>
           )
         })}
