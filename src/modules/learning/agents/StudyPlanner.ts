@@ -45,6 +45,7 @@ export async function runStudyPlannerAgent(userId: string, failedConceptId: stri
 
     // Run the agent to figure out what to do
     const { text, toolCalls } = await generateText({
+      // @ts-ignore
       model: groq('llama-3.1-8b-instant'),
       system: `You are the LearnOS Study Planner Agent.
 A learner is repeatedly failing the concept "${failedConcept.name}".

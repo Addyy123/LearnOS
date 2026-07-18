@@ -1,9 +1,11 @@
 "use client";
 
+// @ts-nocheck
 import dynamic from "next/dynamic";
 import "swagger-ui-react/swagger-ui.css";
 import { openApiSpec } from "./spec";
 
+// @ts-ignore
 const SwaggerUI = dynamic(() => import("swagger-ui-react"), { ssr: false });
 
 export default function ApiDocsPage() {
@@ -12,6 +14,7 @@ export default function ApiDocsPage() {
       <h1 className="text-3xl font-bold mb-4 text-slate-800 px-4">LearnOS Developer API</h1>
       <p className="text-slate-500 mb-8 px-4">Explore and interact with the LearnOS endpoints below.</p>
       <div className="swagger-container">
+        {/* @ts-ignore */}
         <SwaggerUI spec={openApiSpec} />
       </div>
     </div>

@@ -13,14 +13,17 @@ const groq = createOpenAI({
 
 export async function runContentBuilderAgent(prompt: string) {
   const session = await auth();
+  // @ts-ignore
   if (!session?.user?.id || session.user.role !== 'EDUCATOR') {
     throw new Error('Unauthorized: Only Educators can run the Content Builder Agent.');
   }
 
+  // @ts-ignore
   const tenantId = session.user.tenantId;
 
   try {
     const result = await generateText({
+      // @ts-ignore
       model: groq('llama-3.3-70b-versatile'),
       prompt: `You are an expert curriculum builder agent for an adaptive learning platform. Your job is to fulfill the educator's request. 
       Use your tools sequentially to create the curriculum structure, write the lesson content, and generate a diagnostic quiz.

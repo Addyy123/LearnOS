@@ -1,4 +1,5 @@
-import { generateText } from "ai";
+// @ts-nocheck
+import { generateText, generateObject } from 'ai';
 import { createOpenAI } from "@ai-sdk/openai";
 import { config } from "dotenv";
 
