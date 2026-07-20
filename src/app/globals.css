@@ -73,13 +73,13 @@
   --color-error: var(--error);
   --color-panel: var(--panel-bg);
   --color-panel-border: var(--panel-border);
-  --font-sans: var(--font-nunito);
+  --font-sans: "Nunito", sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-nunito), sans-serif;
+  font-family: "Nunito", sans-serif;
 }
 
 /* Hide scrollbar but keep scroll functionality (for chip trays on mobile) */
