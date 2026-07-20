@@ -168,7 +168,7 @@ export async function getEarnedCertificates() {
   return masteryStates.map(m => ({
     id: m.id,
     conceptName: m.concept.name,
-    learnerName: user.email.split("@")[0], // Fallback name based on email since we lack a name field
+    learnerName: (user as any).displayName || user.email.split("@")[0], // Fallback name based on email
     dateEarned: m.updatedAt.toISOString(),
     score: Math.round(m.probability)
   }))

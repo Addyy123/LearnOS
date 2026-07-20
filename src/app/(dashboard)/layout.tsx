@@ -2,6 +2,8 @@ import { auth } from "@/modules/identity/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { Sidebar } from "@/components/navigation/Sidebar"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { Avatar } from "@/components/ui/Avatar"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
@@ -12,37 +14,49 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { onboardingCompleted: true, role: true, email: true }
+    select: { onboardingCompleted: true, role: true, email: true, displayName: true, avatarId: true } as any
   })
 
   if (user && !user.onboardingCompleted) {
     redirect("/onboarding")
   }
 
-  const initials = user?.email?.substring(0, 2).toUpperCase() || "US";
+  let displayName = user?.displayName;
+  if (!displayName) {
+    if (user?.email?.startsWith("guest_")) {
+      displayName = "Learner";
+    } else {
+      displayName = user?.email ? user.email.split('@')[0] : "Learner";
+    }
+  }
 
   return (
-    <div className="min-h-screen flex bg-background pb-20 md:pb-0">
+    <div className="min-h-screen flex bg-[var(--background)]">
       {/* Sidebar */}
       <Sidebar role={user?.role || "LEARNER"} />
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-screen overflow-y-auto animate-fade-in relative">
-        <header className="h-16 border-b-2 border-panel-border bg-panel flex items-center justify-between px-8 sticky top-0 z-10 shadow-sm">
+      <main className="flex-1 flex flex-col h-[100dvh] overflow-y-auto animate-fade-in relative">
+        <header className="h-16 border-b-2 border-[var(--panel-border)] bg-[var(--panel-bg)] flex items-center justify-between pl-16 pr-4 md:px-8 sticky top-0 z-10 shadow-sm shrink-0">
           <div className="flex-1">
             <span className="text-[10px] md:text-xs font-black text-foreground/30 uppercase tracking-widest">
               Powered by Addyy
             </span>
           </div>
-          <div className="flex items-center gap-4 ml-auto">
-            <span className="hidden md:block font-bold text-foreground">{user?.email}</span>
-            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-white font-bold border-b-4 border-secondary-hover">
-              {initials}
-            </div>
+          <div className="flex items-center gap-3 ml-auto">
+            <ThemeToggle />
+            <span className="hidden md:block font-bold text-foreground">
+              {displayName}
+            </span>
+            <Avatar 
+              avatarId={user?.avatarId} 
+              fallback={displayName || user?.email} 
+              size="md" 
+            />
           </div>
         </header>
-        <div className="p-4 md:p-8 flex justify-center w-full">
-          <div className="w-full max-w-[800px]">
+        <div className="p-4 md:p-8 flex justify-center w-full flex-1 min-h-0">
+          <div className="w-full max-w-5xl flex flex-col flex-1 min-h-0">
             {children}
           </div>
         </div>

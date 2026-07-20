@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { Settings2, UserCircle, Bell, Shield, Flame } from "lucide-react"
 import Link from "next/link"
+import ProfileForm from "./ProfileForm"
 
 export default async function SettingsPage() {
   const session = await auth()
@@ -37,36 +38,28 @@ export default async function SettingsPage() {
           {/* Account Details */}
           <section className="bg-[var(--panel-bg)] border border-[var(--panel-border)] rounded-3xl p-8 backdrop-blur-xl">
             <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6">
-              <UserCircle className="w-6 h-6 text-secondary" /> Account Details
+              <UserCircle className="w-6 h-6 text-secondary" /> Edit Profile
             </h2>
-            <div className="space-y-4">
+            <ProfileForm 
+              // @ts-ignore (Prisma client types might not be generated yet)
+              initialDisplayName={user.displayName} 
+              // @ts-ignore
+              initialAvatarId={user.avatarId} 
+              email={user.email} 
+            />
+            
+            <div className="mt-8 pt-6 border-t-2 border-[var(--panel-border)] flex justify-between items-center">
               <div>
-                <label className="block text-sm font-medium text-foreground/50 mb-1">Email Address</label>
-                <div className="bg-black/5 border border-[var(--panel-border)] rounded-xl px-4 py-3 text-foreground font-medium">
-                  {user.email}
-                </div>
+                <p className="text-sm font-medium text-foreground/50">Email Address</p>
+                <p className="text-foreground font-bold">{user.email}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground/50 mb-1">Role</label>
-                  <div className="bg-black/5 border border-[var(--panel-border)] rounded-xl px-4 py-3 text-foreground font-medium capitalize">
-                    {user.role.toLowerCase()}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground/50 mb-1">Organization</label>
-                  <div className="bg-black/5 border border-[var(--panel-border)] rounded-xl px-4 py-3 text-foreground font-medium">
-                    {user.tenant.name}
-                  </div>
-                </div>
+              <div className="flex justify-end">
+                <Link href="/forgot-password">
+                  <button className="bg-primary/10 text-primary hover:bg-primary/20 px-6 py-2 rounded-lg font-bold transition-colors">
+                    Change Password
+                  </button>
+                </Link>
               </div>
-            </div>
-            <div className="mt-6 flex justify-end">
-              <Link href="/forgot-password">
-                <button className="bg-primary/10 text-primary hover:bg-primary/20 px-6 py-2 rounded-lg font-bold transition-colors">
-                  Change Password
-                </button>
-              </Link>
             </div>
           </section>
 

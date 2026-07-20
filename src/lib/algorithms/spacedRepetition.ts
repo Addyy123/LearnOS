@@ -28,19 +28,37 @@ export function calculateSpacedRepetition(
     scorePercentage
   } = input;
 
-  // 1. Update Bayesian-like Probability
+  // 1. Deep Knowledge Tracing (BKT Model)
   let newProbability = currentProbability;
   
   if (evidenceCount === 0) {
     // First attempt: jump straight to the score
     newProbability = scorePercentage;
   } else {
-    // Basic Elo/Weighted average logic for MVP
-    if (scorePercentage > currentProbability) {
-      newProbability = currentProbability + ((scorePercentage - currentProbability) * 0.5);
+    // Bayesian Knowledge Tracing parameters
+    const P_T = 0.1;  // Probability of transitioning from unlearned to learned state
+    const P_S = 0.2;  // Probability of slipping (making a mistake despite knowing)
+    const P_G = 0.25; // Probability of guessing correctly
+    
+    // Normalize to 0.0 - 1.0
+    let p_L = currentProbability / 100;
+    
+    // Determine observation (correct if >= 60%)
+    const isCorrect = scorePercentage >= 60;
+    
+    // Calculate posterior probability of learning state given the observation
+    let p_L_given_obs;
+    if (isCorrect) {
+      p_L_given_obs = (p_L * (1 - P_S)) / (p_L * (1 - P_S) + (1 - p_L) * P_G);
     } else {
-      newProbability = currentProbability - ((currentProbability - scorePercentage) * 0.2);
+      p_L_given_obs = (p_L * P_S) / (p_L * P_S + (1 - p_L) * (1 - P_G));
     }
+    
+    // Apply learning transition (chance they learned it after answering)
+    p_L = p_L_given_obs + (1 - p_L_given_obs) * P_T;
+    
+    // Convert back to 0-100 scale
+    newProbability = p_L * 100;
   }
 
   // Cap between 0 and 100

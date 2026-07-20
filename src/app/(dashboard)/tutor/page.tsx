@@ -1,7 +1,10 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react"
-import { Send, User, Bot, Mic, MicOff, Volume2, VolumeX, Square, ImagePlus, X, Lightbulb, Copy, Check, Plus } from "lucide-react"
+import { Send, User, Bot, Mic, MicOff, Volume2, VolumeX, Square, ImagePlus, X, Lightbulb, Copy, Check, Plus, Menu, Search, MessageSquare, PlusCircle } from "lucide-react"
+import { getUserConversations } from "@/modules/learning/aiActions"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 
 type Message = {
   id: string
@@ -20,6 +23,7 @@ export default function TutorPage() {
 
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
+  const [teachingMode, setTeachingMode] = useState("explain")
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -34,6 +38,21 @@ export default function TutorPage() {
 
   const [isAutoSpeak, setIsAutoSpeak] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
+
+  type ConversationPreview = {
+    id: string;
+    createdAt: Date;
+    conceptName: string | null;
+    preview: string;
+  }
+  const [conversations, setConversations] = useState<ConversationPreview[]>([])
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const filteredConversations = conversations.filter(c => 
+    c.preview.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    c.conceptName?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   useEffect(() => {
     return () => {
@@ -93,7 +112,41 @@ export default function TutorPage() {
     }
   }
 
+  const loadConversations = async () => {
+    try {
+      const data = await getUserConversations()
+      // Fix date types that get serialized from server action
+      setConversations(data.map(d => ({ ...d, createdAt: new Date(d.createdAt) })))
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const loadConversation = async (id: string) => {
+    setIsLoading(true)
+    try {
+      const res = await fetch(`/api/chat/history?conversationId=${id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setMessages(data.messages || [])
+        setConversationId(id)
+        if (window.innerWidth < 768) setIsSidebarOpen(false)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const startNewChat = () => {
+    setConversationId(null)
+    setMessages([])
+    if (window.innerWidth < 768) setIsSidebarOpen(false)
+  }
+
   useEffect(() => {
+    loadConversations()
     // Fetch initial chat history
     const fetchHistory = async () => {
       try {
@@ -236,6 +289,7 @@ export default function TutorPage() {
             imageUrl: m.imageUrl
           })),
           conversationId,
+          teachingMode,
         }),
       })
 
@@ -246,6 +300,7 @@ export default function TutorPage() {
       const activeConvId = response.headers.get("X-Conversation-Id")
       if (activeConvId && !conversationId) {
         setConversationId(activeConvId)
+        loadConversations() // refresh sidebar when new chat is created
       }
 
       const reader = response.body.getReader()
@@ -330,11 +385,16 @@ export default function TutorPage() {
             content: m.content
           })),
           conversationId,
+          teachingMode,
         }),
       }).then(async (response) => {
         if (!response.ok || !response.body) throw new Error("API error")
+        
         const activeConvId = response.headers.get("X-Conversation-Id")
-        if (activeConvId && !conversationId) setConversationId(activeConvId)
+        if (activeConvId && !conversationId) {
+          setConversationId(activeConvId)
+          loadConversations()
+        }
         
         const reader = response.body.getReader()
         const decoder = new TextDecoder()
@@ -373,37 +433,93 @@ export default function TutorPage() {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  // Very lightweight markdown formatter for bold and italic
-  const formatMarkdown = (text: string) => {
-    if (!text) return null
-    // Simple replacement for **bold** and *italic*
-    const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g)
-    return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="font-extrabold text-foreground">{part.slice(2, -2)}</strong>
-      }
-      if (part.startsWith('*') && part.endsWith('*')) {
-        return <em key={i} className="italic">{part.slice(1, -1)}</em>
-      }
-      if (part.startsWith('`') && part.endsWith('`')) {
-        return <code key={i} className="bg-black/10 px-1 py-0.5 rounded text-sm font-mono text-primary">{part.slice(1, -1)}</code>
-      }
-      return <span key={i}>{part}</span>
-    })
-  }
-
   return (
-    <div className="max-w-4xl mx-auto h-[calc(100dvh-4rem)] md:h-[calc(100vh-8rem)] flex flex-col card-tactile p-0 overflow-hidden mb-16 md:mb-0">
-      {/* Chat Header */}
-      <div className="p-4 border-b-2 border-[var(--panel-border)] flex items-center gap-4 bg-primary/10">
-        <div className="w-12 h-12 bg-primary text-white rounded-xl flex items-center justify-center shadow-sm">
-          <Bot className="w-7 h-7" />
+    <div className="w-full max-w-5xl mx-auto flex-1 flex card-tactile p-0 overflow-hidden mb-16 md:mb-0 relative min-h-0">
+      
+      {/* Sidebar Overlay for Mobile */}
+      {isSidebarOpen && (
+        <div 
+          className="md:hidden absolute inset-0 bg-black/50 z-40 backdrop-blur-sm"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={`
+        absolute md:relative z-50 h-full bg-[var(--panel-bg)] border-[var(--panel-border)] transition-all duration-300 ease-in-out flex flex-col overflow-hidden
+        ${isSidebarOpen ? "w-72 border-r-2 opacity-100 translate-x-0" : "w-0 border-r-0 opacity-0 -translate-x-10"}
+      `}>
+        <div className="w-72 h-full flex flex-col shrink-0">
+          <div className="p-4 border-b-2 border-[var(--panel-border)] flex flex-col gap-4">
+          <button 
+            onClick={startNewChat}
+            className="w-full bg-secondary hover:bg-secondary-hover text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all"
+          >
+            <PlusCircle className="w-5 h-5" /> New Chat
+          </button>
+          
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/50" />
+            <input 
+              type="text" 
+              placeholder="Search history..." 
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full bg-black/5 border-2 border-transparent focus:border-primary rounded-xl pl-9 pr-4 py-2 text-sm font-medium outline-none transition-all"
+            />
+          </div>
         </div>
-        <div>
-          <h2 className="text-xl font-bold text-foreground">AI Tutor</h2>
-          <p className="text-sm font-bold text-primary">Always here to help you learn</p>
+        
+        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          {filteredConversations.map(conv => (
+            <button
+              key={conv.id}
+              onClick={() => loadConversation(conv.id)}
+              className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
+                conversationId === conv.id 
+                  ? "border-primary bg-primary/10" 
+                  : "border-transparent hover:bg-black/5"
+              }`}
+            >
+              <div className="text-sm font-bold text-foreground line-clamp-1">{conv.preview}</div>
+              <div className="flex justify-between items-center mt-1">
+                <span className="text-xs text-foreground/50 font-medium">
+                  {conv.conceptName || "General Chat"}
+                </span>
+                <span className="text-xs text-foreground/40 font-medium">
+                  {new Date(conv.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+            </button>
+          ))}
+          {filteredConversations.length === 0 && (
+            <div className="text-center p-4 text-sm text-foreground/50 font-medium">
+              No conversations found.
+            </div>
+          )}
+        </div>
         </div>
       </div>
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col h-full bg-[var(--background)] min-w-0">
+        {/* Chat Header */}
+        <div className="p-4 border-b-2 border-[var(--panel-border)] flex items-center gap-4 bg-[var(--panel-bg)] shrink-0">
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-2 rounded-xl bg-black/5 hover:bg-black/10 transition-colors shrink-0"
+            title="Toggle chat history"
+          >
+            <Menu className="w-6 h-6 text-foreground" />
+          </button>
+          <div className="w-12 h-12 bg-primary text-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
+            <Bot className="w-7 h-7" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl font-bold text-foreground truncate">AI Tutor</h2>
+            <p className="text-sm font-bold text-primary truncate">Always here to help you learn</p>
+          </div>
+        </div>
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-black/5">
@@ -435,7 +551,41 @@ export default function TutorPage() {
                 {msg.imageUrl && (
                   <img src={msg.imageUrl} alt="Attached" className="max-w-full h-auto rounded-xl mb-2 border-2 border-panel-border" />
                 )}
-                {msg.content ? formatMarkdown(msg.content) : (msg.role === "assistant" && isLoading ? (
+                {msg.content ? (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      code(props) {
+                        const {children, className, node, ...rest} = props
+                        const match = /language-(\w+)/.exec(className || '')
+                        return match ? (
+                          <pre className="bg-black/10 p-2 rounded-md overflow-x-auto text-sm font-mono mt-2 mb-2">
+                            <code className={className} {...rest}>
+                              {children}
+                            </code>
+                          </pre>
+                        ) : (
+                          <code className="bg-black/10 px-1 py-0.5 rounded text-sm font-mono text-primary" {...rest}>
+                            {children}
+                          </code>
+                        )
+                      },
+                      ul: ({node, ...props}) => <ul className="list-disc pl-5 my-2 space-y-1" {...props} />,
+                      ol: ({node, ...props}) => <ol className="list-decimal pl-5 my-2 space-y-1" {...props} />,
+                      h1: ({node, ...props}) => <h1 className="text-xl font-bold my-2" {...props} />,
+                      h2: ({node, ...props}) => <h2 className="text-lg font-bold my-2" {...props} />,
+                      h3: ({node, ...props}) => <h3 className="text-md font-bold my-2" {...props} />,
+                      a: ({node, ...props}) => <a className="text-primary hover:underline font-bold" {...props} />,
+                      p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
+                      strong: ({node, ...props}) => <strong className="font-extrabold text-foreground" {...props} />,
+                      table: ({node, ...props}) => <table className="w-full border-collapse my-4 text-sm" {...props} />,
+                      th: ({node, ...props}) => <th className="border-b-2 border-primary/20 p-2 text-left font-bold" {...props} />,
+                      td: ({node, ...props}) => <td className="border-b border-primary/10 p-2" {...props} />,
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
+                ) : (msg.role === "assistant" && isLoading ? (
                   <span className="text-gray-400 font-bold animate-pulse">Thinking...</span>
                 ) : null)}
               </div>
@@ -477,20 +627,47 @@ export default function TutorPage() {
       </div>
 
       {/* Input Area with Prompt Chips */}
-      <div className="p-4 border-t-2 border-[var(--panel-border)] bg-[var(--panel-bg)] flex flex-col">
-        {/* Suggested Prompts */}
+      <div className="p-3 md:p-4 border-t-2 border-[var(--panel-border)] bg-[var(--panel-bg)] flex flex-col gap-2">
+
+        {/* Row 1: Prompt chips + mode selector — horizontally scrollable on mobile */}
         {messages.length < 2 && !isLoading && (
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {suggestedPrompts.map((prompt, idx) => (
               <button
                 key={idx}
                 onClick={() => handleSendPrompt(prompt)}
-                className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 border-2 border-primary/20 hover:border-primary text-primary rounded-full text-sm font-bold transition-all active:scale-95"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 hover:border-primary text-primary rounded-full text-xs font-bold transition-all active:scale-95 whitespace-nowrap shrink-0"
               >
-                <Lightbulb className="w-4 h-4" />
+                <Lightbulb className="w-3.5 h-3.5 shrink-0" />
                 {prompt}
               </button>
             ))}
+            <div className="ml-auto shrink-0">
+              <select
+                value={teachingMode}
+                onChange={(e) => setTeachingMode(e.target.value)}
+                className="bg-[var(--panel-border)] text-foreground font-bold text-xs rounded-xl px-3 py-1.5 border border-[var(--panel-border)] outline-none focus:border-primary whitespace-nowrap"
+              >
+                <option value="explain" className="bg-[var(--panel-bg)] text-foreground">Explain it</option>
+                <option value="walkthrough" className="bg-[var(--panel-bg)] text-foreground">Walk me through it</option>
+                <option value="test" className="bg-[var(--panel-bg)] text-foreground">Test me</option>
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* When no chips showing, still show mode selector alone */}
+        {(messages.length >= 2 || isLoading) && (
+          <div className="flex justify-end">
+            <select
+              value={teachingMode}
+              onChange={(e) => setTeachingMode(e.target.value)}
+              className="bg-[var(--panel-border)] text-foreground font-bold text-xs rounded-xl px-3 py-1.5 border border-[var(--panel-border)] outline-none focus:border-primary"
+            >
+              <option value="explain" className="bg-[var(--panel-bg)] text-foreground">Explain it</option>
+              <option value="walkthrough" className="bg-[var(--panel-bg)] text-foreground">Walk me through it</option>
+              <option value="test" className="bg-[var(--panel-bg)] text-foreground">Test me</option>
+            </select>
           </div>
         )}
 
@@ -586,6 +763,7 @@ export default function TutorPage() {
             </button>
           </div>
         </form>
+      </div>
       </div>
     </div>
   )

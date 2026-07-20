@@ -108,3 +108,28 @@ export async function generateQuizForConcept(conceptId: string) {
   revalidatePath(`/curriculum/${conceptId}/practice`)
   return { success: true }
 }
+
+export async function getUserConversations() {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+  
+  const conversations = await prisma.aiConversation.findMany({
+    where: { userId: session.user.id },
+    orderBy: { createdAt: "desc" },
+    include: {
+      messages: {
+        orderBy: { createdAt: "asc" },
+        take: 1
+      },
+      concept: true
+    }
+  })
+  
+  return conversations.map(c => ({
+    id: c.id,
+    createdAt: c.createdAt,
+    conceptName: c.concept?.name || null,
+    preview: c.messages[0]?.content || "New Conversation"
+  }))
+}
+

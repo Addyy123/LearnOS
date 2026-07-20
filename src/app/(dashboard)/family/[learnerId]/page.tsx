@@ -2,7 +2,8 @@ import { auth } from "@/modules/identity/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, User, Activity, CheckCircle2, XCircle, BrainCircuit } from "lucide-react"
+import { ArrowLeft, Activity, CheckCircle2, XCircle, BrainCircuit } from "lucide-react"
+import { Avatar } from "@/components/ui/Avatar"
 import { MasteryChart } from "./MasteryChart"
 
 export default async function LearnerReportPage({ params }: { params: { learnerId: string } }) {
@@ -54,11 +55,11 @@ export default async function LearnerReportPage({ params }: { params: { learnerI
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Family Portal
         </Link>
         <h1 className="text-4xl font-bold text-foreground flex items-center gap-3">
-          <User className="w-10 h-10 text-blue-400" />
-          {learner.email.split("@")[0]}'s Report
+          <Avatar avatarId={(learner as any).avatarId} fallback={(learner as any).displayName || learner.email} size="md" />
+          {((learner as any).displayName || learner.email.split("@")[0])}'s Report
         </h1>
         <p className="text-foreground/60 mt-2 text-lg">
-          Detailed overview of {learner.email.split("@")[0]}'s learning progress and recent activities.
+          Detailed overview of {((learner as any).displayName || learner.email.split("@")[0])}'s learning progress and recent activities.
         </p>
       </div>
 

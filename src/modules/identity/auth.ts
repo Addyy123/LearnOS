@@ -16,20 +16,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       authorize: async (credentials) => {
         try {
           if (credentials?.isGuest === "true") {
-            let guest = await prisma.user.findUnique({ where: { email: "guest@learnos.ai" } })
-            if (!guest) {
-               let tenant = await prisma.tenant.findFirst()
-               if (!tenant) {
-                 tenant = await prisma.tenant.create({ data: { name: "Guest Tenant" } })
-               }
-               guest = await prisma.user.create({
-                 data: {
-                   email: "guest@learnos.ai",
-                   role: "LEARNER",
-                   tenantId: tenant.id
-                 }
-               })
+            let tenant = await prisma.tenant.findFirst()
+            if (!tenant) {
+              tenant = await prisma.tenant.create({ data: { name: "Guest Tenant" } })
             }
+            const guestId = crypto.randomUUID()
+            const guest = await prisma.user.create({
+              data: {
+                email: `guest_${guestId}@learnos.ai`,
+                role: "LEARNER",
+                tenantId: tenant.id
+              }
+            })
             return {
               id: guest.id,
               email: guest.email,

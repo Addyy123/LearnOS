@@ -4,7 +4,7 @@ import { auth } from "@/modules/identity/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 
-export async function getDiagnosticQuestions() {
+export async function getDiagnosticQuestions(conceptId?: string) {
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
 
@@ -13,28 +13,49 @@ export async function getDiagnosticQuestions() {
   })
   if (!user) throw new Error("Unauthorized")
 
-  // Fetch some questions from the tenant's curriculum
+  // Fetch quizzes from the tenant's curriculum
   const assets = await prisma.contentAsset.findMany({
     where: { 
       tenantId: user.tenantId,
-      type: "QUESTION"
-    },
-    take: 5 // Get 5 random questions for diagnostic
-  })
-
-  // Parse JSON bodies
-  return assets.map(a => {
-    const data = JSON.parse(a.body)
-    return {
-      id: a.id,
-      text: data.question,
-      options: data.options,
-      correctAnswerIndex: data.options.indexOf(data.answer)
+      type: "QUIZ",
+      ...(conceptId ? { conceptId } : {})
     }
   })
+
+  // Parse JSON bodies (which are arrays of questions)
+  const allQuestions: any[] = []
+  
+  for (const a of assets) {
+    try {
+      const dataArray = JSON.parse(a.body)
+      if (Array.isArray(dataArray)) {
+        for (const data of dataArray) {
+          allQuestions.push({
+            id: a.id + "-" + allQuestions.length,
+            text: data.question,
+            options: data.options,
+            correctAnswerIndex: data.answerIndex !== undefined ? data.answerIndex : data.options.indexOf(data.answer)
+          })
+        }
+      } else {
+        // Fallback if it's a single object
+        allQuestions.push({
+          id: a.id,
+          text: dataArray.question,
+          options: dataArray.options,
+          correctAnswerIndex: dataArray.answerIndex !== undefined ? dataArray.answerIndex : dataArray.options.indexOf(dataArray.answer)
+        })
+      }
+    } catch (e) {
+      console.error("Failed to parse quiz asset", a.id)
+    }
+  }
+
+  // Shuffle and take up to 5 questions
+  return allQuestions.sort(() => 0.5 - Math.random()).slice(0, 5)
 }
 
-export async function submitDiagnostic(score: number) {
+export async function submitDiagnostic(score: number, conceptId?: string) {
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
 
@@ -44,11 +65,14 @@ export async function submitDiagnostic(score: number) {
   })
   if (!user) throw new Error("Unauthorized")
 
-  // For MVP, we apply the baseline score equally across all tenant concepts.
-  // E.g., if they got 60% on the diagnostic, we set 60% probability for all core concepts.
   const baseProbability = score
 
-  for (const concept of user.tenant.concepts) {
+  // If a specific concept was selected, only calibrate that one. Otherwise calibrate all.
+  const conceptsToUpdate = conceptId 
+    ? user.tenant.concepts.filter(c => c.id === conceptId) 
+    : user.tenant.concepts
+
+  for (const concept of conceptsToUpdate) {
     await prisma.masteryState.upsert({
       where: {
         userId_conceptId: {

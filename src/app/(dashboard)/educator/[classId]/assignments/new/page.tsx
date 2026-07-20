@@ -110,8 +110,8 @@ export default function NewAssignmentPage({ params }: { params: { classId: strin
               className="w-full bg-black/20 border border-[var(--panel-border)] rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
               required
             >
-              {concepts.map(concept => (
-                <option key={concept.id} value={concept.id} className="bg-zinc-900">
+              {concepts.map((concept) => (
+                <option key={concept.id} value={concept.id} className="bg-[var(--panel-bg)] text-foreground">
                   {concept.name}
                 </option>
               ))}

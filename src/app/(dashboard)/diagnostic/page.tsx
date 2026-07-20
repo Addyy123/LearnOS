@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { submitDiagnostic, getDiagnosticQuestions } from "@/modules/learning/diagnosticActions"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { BrainCircuit, CheckCircle2, ChevronRight, Loader2 } from "lucide-react"
 
 type Question = {
@@ -12,8 +12,10 @@ type Question = {
   correctAnswerIndex: number
 }
 
-export default function DiagnosticPage() {
+function DiagnosticContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const conceptId = searchParams.get("conceptId") || undefined
   const [questions, setQuestions] = useState<Question[]>([])
   const [loading, setLoading] = useState(true)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
@@ -23,7 +25,7 @@ export default function DiagnosticPage() {
   const [isDone, setIsDone] = useState(false)
   
   useEffect(() => {
-    getDiagnosticQuestions().then(qs => {
+    getDiagnosticQuestions(conceptId).then(qs => {
       setQuestions(qs)
       setLoading(false)
     }).catch(err => {
@@ -71,7 +73,7 @@ export default function DiagnosticPage() {
       const score = Math.round((correctCount / questions.length) * 100)
       
       try {
-        await submitDiagnostic(score)
+        await submitDiagnostic(score, conceptId)
         // Give the UI a moment to show the success state before redirecting
         setTimeout(() => {
           router.push("/plan")
@@ -146,5 +148,17 @@ export default function DiagnosticPage() {
         </button>
       </div>
     </div>
+  )
+}
+
+export default function DiagnosticPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-[70vh]">
+        <Loader2 className="w-12 h-12 animate-spin text-secondary" />
+      </div>
+    }>
+      <DiagnosticContent />
+    </Suspense>
   )
 }

@@ -36,14 +36,21 @@ export async function POST(req: Request) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: sessionUserId }
+      where: { id: sessionUserId },
+      include: {
+        plans: {
+          include: { items: { include: { concept: true } } },
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        }
+      }
     });
     
     if (!user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 
-    const { messages, conversationId } = await req.json();
+    const { messages, conversationId, teachingMode } = await req.json();
 
     let activeConversationId = conversationId;
     
@@ -176,9 +183,26 @@ export async function POST(req: Request) {
       where: { userId: user.id, status: "ACTIVE" }
     });
     
-    let goalsContext = "";
+    let goalsContext = `\n\nThe user currently has a ${user.currentStreak}-day learning streak. Encourage them to keep it up!`;
     if (activeGoals.length > 0) {
-      goalsContext = `\n\nThe user's current active goals are:\n${activeGoals.map(g => `- ${g.title}`).join('\n')}\nPlease tailor your teaching and examples to help them achieve these goals when relevant.`;
+      goalsContext += `\n\nThe user's current active goals are:\n${activeGoals.map(g => `- ${g.title}`).join('\n')}\nPlease tailor your teaching and examples to help them achieve these goals when relevant.`;
+    }
+
+    // Inject Active Subject Context
+    let subjectContext = "";
+    if (user.plans && user.plans.length > 0) {
+      const activePlan = user.plans[0];
+      subjectContext = `\n\nThe user's primary focus right now is learning: ${activePlan.title}. Relate explanations to this broader subject if possible.`;
+    }
+    
+    // Inject Teaching Mode
+    let modeContext = "";
+    if (teachingMode === "test") {
+      modeContext = "\n\nTEACHING MODE: 'Test Me'. Ask a question to test their understanding right now. Do not explain the concept yet.";
+    } else if (teachingMode === "walkthrough") {
+      modeContext = "\n\nTEACHING MODE: 'Walk me through it'. Provide step 1 of the solution. Wait for them to complete step 1 before giving step 2.";
+    } else {
+      modeContext = "\n\nTEACHING MODE: 'Explain it'. Provide a clear, conceptual explanation using a relatable analogy.";
     }
 
     // Token-budget conversation memory management
@@ -237,7 +261,7 @@ export async function POST(req: Request) {
               {
                 role: "system",
                 content:
-                  TUTOR_PROMPT_V1 + contextString + goalsContext,
+                  TUTOR_PROMPT_V1 + contextString + goalsContext + subjectContext + modeContext,
               },
               ...formattedMessages,
             ],

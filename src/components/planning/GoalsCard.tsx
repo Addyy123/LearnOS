@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { createGoal, completeGoal } from "@/modules/planning/actions"
-import { Target, CheckCircle2, Circle, Plus, X } from "lucide-react"
+import { createGoal, completeGoal, generateDynamicQuests } from "@/modules/planning/actions"
+import { Target, CheckCircle2, Circle, Plus, X, Wand2 } from "lucide-react"
 
 type Goal = {
   id: string
@@ -14,6 +14,19 @@ export function GoalsCard({ goals }: { goals: Goal[] }) {
   const [isAdding, setIsAdding] = useState(false)
   const [newTitle, setNewTitle] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  const handleGenerateQuests = async () => {
+    setIsGenerating(true)
+    try {
+      await generateDynamicQuests()
+    } catch (error) {
+      console.error(error)
+      alert("Failed to generate quests. Have you started learning concepts yet?")
+    } finally {
+      setIsGenerating(false)
+    }
+  }
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,12 +59,23 @@ export function GoalsCard({ goals }: { goals: Goal[] }) {
           <Target className="w-5 h-5 text-secondary" /> Active Goals
         </h3>
         {!isAdding && (
-          <button 
-            onClick={() => setIsAdding(true)}
-            className="w-8 h-8 rounded-full bg-secondary/20 text-secondary flex items-center justify-center hover:bg-secondary/40 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleGenerateQuests}
+              disabled={isGenerating}
+              title="Auto-generate daily quests"
+              className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center hover:bg-primary/40 transition-colors disabled:opacity-50"
+            >
+              {isGenerating ? <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" /> : <Wand2 className="w-4 h-4" />}
+            </button>
+            <button 
+              onClick={() => setIsAdding(true)}
+              title="Add a manual goal"
+              className="w-8 h-8 rounded-full bg-secondary/20 text-secondary flex items-center justify-center hover:bg-secondary/40 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
         )}
       </div>
 

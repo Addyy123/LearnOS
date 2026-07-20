@@ -88,12 +88,12 @@ export default function OnboardingPage() {
                   onChange={e => setAgeRegion(e.target.value)}
                   className="w-full bg-black/20 border border-[var(--panel-border)] rounded-xl py-3 px-4 focus:border-primary"
                 >
-                  <option value="" disabled>Select your bracket...</option>
-                  <option value="13-17_US">13-17 (US)</option>
-                  <option value="18+_US">18+ (US)</option>
-                  <option value="13-17_EU">13-17 (EU/GDPR)</option>
-                  <option value="18+_EU">18+ (EU/GDPR)</option>
-                  <option value="OTHER">Other Global</option>
+                  <option value="" disabled className="bg-[var(--panel-bg)] text-foreground">Select your bracket...</option>
+                  <option value="13-17_US" className="bg-[var(--panel-bg)] text-foreground">13-17 (US)</option>
+                  <option value="18+_US" className="bg-[var(--panel-bg)] text-foreground">18+ (US)</option>
+                  <option value="13-17_EU" className="bg-[var(--panel-bg)] text-foreground">13-17 (EU/GDPR)</option>
+                  <option value="18+_EU" className="bg-[var(--panel-bg)] text-foreground">18+ (EU/GDPR)</option>
+                  <option value="OTHER" className="bg-[var(--panel-bg)] text-foreground">Other Global</option>
                 </select>
               </div>
 

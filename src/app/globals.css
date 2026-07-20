@@ -35,6 +35,33 @@
   }
 }
 
+/* Manual theme overrides — these beat the OS preference */
+[data-theme="light"] {
+  --background: #F7F7F9;
+  --foreground: #4B4B4B;
+  --primary: #1CB0F6;
+  --primary-hover: #1899D6;
+  --secondary: #58CC02;
+  --secondary-hover: #46A302;
+  --warning: #FFC800;
+  --error: #FF4B4B;
+  --panel-bg: #FFFFFF;
+  --panel-border: #E5E5E5;
+}
+
+[data-theme="dark"] {
+  --background: #0B0F19;
+  --foreground: #F8FAFC;
+  --primary: #29BAFF;
+  --primary-hover: #1CA3E6;
+  --secondary: #65D60F;
+  --secondary-hover: #50B303;
+  --warning: #FFD13B;
+  --error: #FF6B6B;
+  --panel-bg: #141B2D;
+  --panel-border: #1E293B;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -53,6 +80,15 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-nunito), sans-serif;
+}
+
+/* Hide scrollbar but keep scroll functionality (for chip trays on mobile) */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 /* Global Animations */

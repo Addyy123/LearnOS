@@ -1,6 +1,7 @@
 import { getLinkedLearners } from "@/modules/identity/familyActions"
 import { Users, PlusCircle, BrainCircuit, Target, Download } from "lucide-react"
 import Link from "next/link"
+import { Avatar } from "@/components/ui/Avatar"
 
 export default async function FamilyPage() {
   let learners = []
@@ -60,11 +61,9 @@ export default async function FamilyPage() {
 
             return (
               <div key={learner.id} className="bg-[var(--panel-bg)] border border-[var(--panel-border)] rounded-3xl p-6 backdrop-blur-xl group hover:border-primary/50 transition-all">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/40 to-secondary/40 flex items-center justify-center mb-4 text-2xl font-bold text-white">
-                  {learner.email[0].toUpperCase()}
-                </div>
+                <Avatar avatarId={(learner as any).avatarId} fallback={(learner as any).displayName || learner.email} size="lg" className="mb-4" />
                 <h3 className="text-2xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
-                  {learner.email.split('@')[0]}
+                  {(learner as any).displayName || learner.email.split('@')[0]}
                 </h3>
                 <p className="text-foreground/60 mb-6 text-sm">
                   {learner.email}

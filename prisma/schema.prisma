@@ -41,6 +41,8 @@ model User {
   ageRegion      String?  @map("age_region")
   consentStatus  String?  @map("consent_status")
   onboardingCompleted Boolean @default(false) @map("onboarding_completed")
+  displayName    String?  @map("display_name")
+  avatarId       String?  @map("avatar_id")
   
   // Gamification
   xp             Int      @default(0)
