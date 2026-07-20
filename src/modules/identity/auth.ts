@@ -66,6 +66,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             tenantId: user.tenantId,
           }
         } catch (error) {
+          console.error("AUTH ERROR:", error)
           return null
         }
       },
