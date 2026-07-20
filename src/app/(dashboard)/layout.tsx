@@ -14,7 +14,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { onboardingCompleted: true, role: true, email: true, displayName: true, avatarId: true } as any
+    select: { onboardingCompleted: true, role: true, email: true, displayName: true, avatarId: true }
   })
 
   if (user && !user.onboardingCompleted) {
@@ -23,10 +23,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   let displayName = user?.displayName;
   if (!displayName) {
-    if (user?.email?.startsWith("guest_")) {
+    const emailStr = user?.email as string | null;
+    if (emailStr?.startsWith("guest_")) {
       displayName = "Learner";
     } else {
-      displayName = user?.email ? user.email.split('@')[0] : "Learner";
+      displayName = emailStr ? emailStr.split('@')[0] : "Learner";
     }
   }
 
