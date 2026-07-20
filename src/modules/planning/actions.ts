@@ -100,7 +100,7 @@ Return ONLY a JSON array of strings, like ["Quest 1", "Quest 2", "Quest 3"].`
 
   const data = await response.json()
   const content = data.choices[0].message.content
-  let parsed: { quests?: string[] } = {}
+  let parsed: any = {}
   try {
     parsed = JSON.parse(content)
     // fallback if AI didn't nest it in "quests" property but returned an array directly
